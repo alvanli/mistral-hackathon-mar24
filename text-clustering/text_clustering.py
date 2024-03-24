@@ -1,22 +1,26 @@
 import json
 import logging
 import os
+import time
 import random
 import textwrap
 from collections import Counter, defaultdict
 
 import faiss
+import joblib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import plotly.express as px
-from huggingface_hub import InferenceClient
+from mistralai.client import MistralClient
 from sentence_transformers import SentenceTransformer
 from sklearn.cluster import DBSCAN
 from tqdm import tqdm
 from umap import UMAP
 
 logging.basicConfig(level=logging.INFO)
+
+from groq import Groq
 
 
 DEFAULT_INSTRUCTION = (
@@ -27,19 +31,35 @@ Example format: Tree, Cat, Fireman"
 
 DEFAULT_TEMPLATE = "<s>[INST]{examples}\n\n{instruction}[/INST]"
 
+client = Groq(
+    api_key=os.environ.get("GROQ_API_KEY"),
+)
+
+def get_groq_response(message):
+    chat_completion = client.chat.completions.create(
+        messages=[
+            {
+                "role": "user",
+                "content": message,
+            }
+        ],
+        model="mixtral-8x7b-32768",
+    )
+    time.sleep(2)
+    return chat_completion.choices[0].message.content
+
 
 class ClusterClassifier:
     def __init__(
         self,
-        embed_model_name="all-MiniLM-L6-v2",
         embed_device="cpu",
         embed_batch_size=64,
         embed_max_seq_length=512,
         embed_agg_strategy=None,
         umap_components=2,
         umap_metric="cosine",
-        dbscan_eps=0.08,
-        dbscan_min_samples=50,
+        dbscan_eps=0.2,
+        dbscan_min_samples=5,
         dbscan_n_jobs=16,
         summary_create=True,
         summary_model="mistralai/Mixtral-8x7B-Instruct-v0.1",
@@ -50,7 +70,6 @@ class ClusterClassifier:
         summary_template=None,
         summary_instruction=None,
     ):
-        self.embed_model_name = embed_model_name
         self.embed_device = embed_device
         self.embed_batch_size = embed_batch_size
         self.embed_max_seq_length = embed_max_seq_length
@@ -70,6 +89,7 @@ class ClusterClassifier:
         self.summary_chunk_size = summary_chunk_size
         self.summary_model_token = summary_model_token
 
+        self.mistral_client = MistralClient(api_key=os.environ.get("MISTRAL_API"))
         if summary_template is None:
             self.summary_template = DEFAULT_TEMPLATE
         else:
@@ -88,24 +108,16 @@ class ClusterClassifier:
         self.umap_mapper = None
         self.id2label = None
         self.label2docs = None
+        self.model = None
 
-        self.embed_model = SentenceTransformer(
-            self.embed_model_name, device=self.embed_device
-        )
-        self.embed_model.max_seq_length = self.embed_max_seq_length
 
-    def fit(self, texts, embeddings=None):
-        self.texts = texts
-
-        # TODO: load embeddings from file
+    def fit(self):
+        self.df = pd.read_parquet("./last_1k_rows.parquet")
+        self.texts = self.df['long_description'].to_list()
+        self.embeddings = self.df['vector'].to_list()
+        self.titles = self.df['company_name'].to_list()
+        self.embeddings = np.stack(self.embeddings)
         
-        # if embeddings is None:
-        #     logging.info("embedding texts...")
-        #     self.embeddings = self.embed(texts)
-        # else:
-        #     logging.info("using precomputed embeddings...")
-        #     self.embeddings = embeddings
-
         logging.info("building faiss index...")
         self.faiss_index = self.build_faiss_index(self.embeddings)
         logging.info("projecting with umap...")
@@ -146,18 +158,15 @@ class ClusterClassifier:
         return inferred_labels, embeddings
 
     def embed(self, texts):
-        embeddings = self.embed_model.encode(
-            texts,
-            batch_size=self.embed_batch_size,
-            show_progress_bar=True,
-            convert_to_numpy=True,
-            normalize_embeddings=True,
+        embeddings_response = self.mistral_client.embeddings(
+            model="mistral-embed",
+            input=texts
         )
-
-        return embeddings
+        return [vec.embedding for vec in embeddings_response.data]
 
     def project(self, embeddings):
-        mapper = UMAP(n_components=self.umap_components, metric=self.umap_metric).fit(
+        self.model = UMAP(n_components=self.umap_components, metric=self.umap_metric)
+        mapper = self.model.fit(
             embeddings
         )
         return mapper.embedding_, mapper
@@ -166,6 +175,8 @@ class ClusterClassifier:
         print(
             f"Using DBSCAN (eps, nim_samples)=({self.dbscan_eps,}, {self.dbscan_min_samples})"
         )
+        print(len(embeddings))
+        print(embeddings[0][1].shape)
         clustering = DBSCAN(
             eps=self.dbscan_eps,
             min_samples=self.dbscan_min_samples,
@@ -181,7 +192,6 @@ class ClusterClassifier:
 
     def summarize(self, texts, labels):
         unique_labels = len(set(labels)) - 1  # exclude the "-1" label
-        client = InferenceClient(self.summary_model, token=self.summary_model_token)
         cluster_summaries = {-1: "None"}
 
         for label in range(unique_labels):
@@ -196,7 +206,7 @@ class ClusterClassifier:
             request = self.summary_template.format(
                 examples=examples, instruction=self.summary_instruction
             )
-            response = client.text_generation(request)
+            response = get_groq_response(request)
             if label == 0:
                 print(f"Request:\n{request}")
             cluster_summaries[label] = self._postprocess_response(response)
@@ -246,6 +256,11 @@ class ClusterClassifier:
         with open(f"{folder}/texts.json", "w") as f:
             json.dump(self.texts, f)
 
+        with open(f"{folder}/titles.json", "w") as f:
+            json.dump(self.titles, f)            
+
+        joblib.dump(self.model, f"{folder}/umap_model.pkl")
+
         with open(f"{folder}/mistral_prompt.txt", "w") as f:
             f.write(DEFAULT_INSTRUCTION)
 
@@ -270,6 +285,9 @@ class ClusterClassifier:
 
         with open(f"{folder}/texts.json", "r") as f:
             self.texts = json.load(f)
+
+        with open(f"{folder}/titles.json", "r") as f:
+            self.titles = json.load(f)   
 
         if os.path.exists(f"{folder}/cluster_summaries.json"):
             with open(f"{folder}/cluster_summaries.json", "r") as f:
@@ -310,7 +328,7 @@ class ClusterClassifier:
             self._show_mpl(df)
 
     def _show_mpl(self, df):
-        fig, ax = plt.subplots(figsize=(12, 8), dpi=300)
+        fig, ax = plt.subplots(figsize=(10, 8), dpi=300)
 
         df["color"] = df["labels"].apply(lambda x: "C0" if x==-1 else f"C{(x%9)+1}")
 
@@ -319,7 +337,7 @@ class ClusterClassifier:
             x="X",
             y="Y",
             c="labels",
-            s=0.75,
+            s=20,
             alpha=0.8,
             linewidth=0,
             color=df["color"],

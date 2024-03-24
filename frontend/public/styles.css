@@ -1,0 +1,424 @@
+/* Referenced from Wealthsimple's style guide */
+:root {
+  --slate-element-bg: #1c1c1b;
+  --soft-bg: #f1f0f0;
+  --bg-soft: #f4eff5;
+  --fg-strong: #804b83;
+  --sky-bg-soft: #ecf2f6;
+  --user-message-bg: #ecf2f6;
+  --assistant-message-bg: #c5e9ee;
+  --sky-fg-strong: #456274;
+  --positive-bg-strong: #486635;
+  --positive-bg-soft: #e9f5df;
+  --negative-fg-strong: #a43d12;
+  --outline: #e4e2e1;
+}
+:root[data-theme='dark'] {
+  --slate-element-bg: #fefefe;
+  --soft-bg: #11181f;
+  --bg-soft: #4a4e69;
+  --fg-strong: #ef8354;
+  --sky-bg-soft: #264653;
+  --user-message-bg: #2a9d8f;
+  --assistant-message-bg: #497b9c;
+  --sky-fg-strong: #35af72;
+  --positive-bg-strong: #073732;
+  --positive-bg-soft: #79b4b7;
+  --negative-fg-strong: #d00000;
+  --outline: #393e46;
+}
+
+.container {
+  min-width: 50%;
+}
+
+.primary-btn {
+  background-color: var(--sky-fg-strong);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 16px;
+  font-weight: 500;
+  padding: 12px;
+}
+
+.secondary-btn {
+  background-color: white;
+  color: var(--sky-fg-strong);
+  border: 1.5px solid var(--sky-fg-strong);
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  padding: 12px;
+}
+
+/* Styling for main app container */
+
+.container .title {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--slate-element-bg);
+  margin: 0;
+}
+
+.waiting {
+  cursor: wait !important;
+}
+
+.cursor-disable {
+  pointer-events: none;
+}
+
+.container article.appDescription {
+  box-shadow: none;
+  margin: 20px 0px 32px 0px;
+  padding: 0;
+}
+
+.appDescription p {
+  color: var(--slate-element-bg);
+  font-size: 18px;
+}
+
+.appDescription a {
+  color: var(--fg-strong);
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.container .chat-container {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  border-style: solid;
+  border-color: var(--outline);
+  border-radius: 12px;
+  border-width: 1.5px;
+  height: 70vh;
+}
+
+.chat-container .main-chat-container {
+  flex-grow: 2;
+  display: flex;
+  flex-direction: column;
+  width: fit-content;
+  min-height: 100%;
+}
+
+/* Styling for chat nav bar */
+.multichat-nav-bar {
+  border-width: 1.5px;
+  border-right-style: solid;
+  border-right-color: var(--outline);
+  width: 24%;
+}
+
+.multichat-nav-bar-container {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  margin: 0;
+  height: 100%;
+}
+
+.multichat-nav-bar-scroll {
+  overflow-y: auto;
+}
+
+.multichat-nav-bar-container article.title {
+  margin: 0;
+  box-shadow: none;
+  padding: 12px 12px;
+  border-radius: 12px 12px 0 0;
+}
+
+.multichat-nav-bar-container article.new-chat-button-div {
+  padding: 12px 12px;
+  box-shadow: none;
+  border-bottom: 1px solid var(--outline);
+  border-radius: 12px 12px 0 0;
+  margin: 0;
+}
+
+.new-chat-button-div body {
+  white-space: nowrap;
+  color: white;
+  text-align: center;
+}
+
+.new-chat-button-div button {
+  margin: 0;
+  padding: 8px;
+  max-width: 100%;
+}
+
+.multichat-nav-bar-container .chat-selected {
+  background-color: var(--sky-bg-soft);
+}
+
+.chat-wrap {
+  margin: 0;
+  height: 64px;
+  box-shadow: none;
+  border-bottom: 1px solid var(--outline);
+  border-radius: 0;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+}
+
+.chat-wrap .nav-item-label {
+  white-space: nowrap;
+  overflow: hidden;
+  font-size: 16px;
+  text-overflow: ellipsis;
+  padding: 0;
+  flex-grow: 2;
+  display: flex;
+  align-items: center;
+}
+
+.nav-item-label .editing-item-label {
+  height: auto;
+  margin: 0;
+  padding: 0 4px;
+  font-size: 16px;
+  border-color: var(--sky-fg-strong);
+  border-radius: 4px;
+  background-color: white;
+}
+
+.chat-wrap .nav-item-icons {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.chat-wrap .nav-item-icons > div {
+  cursor: pointer;
+}
+.nav-item-icons svg {
+  fill: var(--slate-element-bg);
+}
+/* Styling for Model Settings */
+/* Main Chat Container Styling */
+.main-chat-container .model-banner {
+  background-color: var(--soft-bg);
+  color: var(--slate-element-bg);
+  display: flex;
+  flex-direction: row;
+  border-radius: 4px 4px 0 0;
+  margin: 0 0 12px;
+  padding: 8px;
+  font-weight: 600;
+  text-align: center;
+  box-shadow: none;
+}
+
+/* Model Banner Styling */
+.model-banner {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.model-banner .model-name {
+  flex-grow: 2;
+}
+
+.model-banner .banner-actions,
+.model-banner .theme-toggle-button,
+.model-banner .clear-chat {
+  display: flex;
+  align-items: center;
+}
+
+.model-banner .theme-toggle-button,
+.model-banner .clear-chat {
+  margin: 0;
+  padding: 12px;
+  height: 24px;
+
+}
+
+
+.theme-toggle-button {
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+}
+.model-banner .clear-chat svg {
+  fill: var(--slate-element-bg);
+  cursor: pointer;
+}
+
+/* Theme Toggle Container */
+.theme-toggle-container {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+/* Styling for Chat Box */
+.chatbox {
+  flex-grow: 4;
+  display: flex;
+  flex-direction: column;
+  max-width: 100%;
+}
+
+.chatbox #chat-action-buttons-group {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 0 40px;
+}
+
+#chat-action-buttons-group .input-box-div {
+  flex-grow: 4;
+  margin: 0;
+}
+
+.input-box-div #input-box {
+  resize: vertical;
+  margin: 0;
+  max-height: 200px;
+  border: 1.5px solid var(--outline);
+  padding: 12px;
+  font-size: 16px;
+}
+
+#error-message {
+  color: var(--negative-fg-strong);
+  font-weight: 400;
+  margin: 0;
+}
+
+.chatbox .helpful-tip {
+  color: var(--slate-element-bg);
+  font-weight: 400;
+  font-size: 14px;
+  margin: 0;
+  padding: 0 40px 16px 40px;
+  text-align: center;
+}
+
+.message-history-container {
+  border-radius: 0px 0px 4px 4px;
+  overflow-y: auto;
+  flex-grow: 4;
+  margin: 0 0 12px 0;
+  padding: 0 40px;
+  max-width: 100%;
+}
+
+.message-history-container .message-history {
+  padding: 0px;
+  height: 50vh;
+  max-width: 100%;
+}
+
+.message-history ul {
+  margin: 0px;
+  padding: 0;
+  contain: size;
+}
+
+.message-history .message {
+  border-radius: 16px;
+  padding: 16px;
+  max-width: 85%;
+  width: fit-content;
+  list-style-type: none;
+  white-space: pre-wrap;
+}
+
+.message-history .message-user {
+  border-top-right-radius: 0;
+  margin-left: auto;
+  margin-bottom: 8px;
+  background-color: var(--user-message-bg);
+  color: #32302f;
+}
+
+.message-history .message-assistant {
+  border: 2px var(--assistant-message-bg);
+  border-top-left-radius: 0;
+  margin-right: auto;
+  margin-bottom: 8px;
+  background-color: var(--assistant-message-bg);
+  max-width: 80%;
+}
+
+.message-history .message p,
+li {
+  color: var(--slate-element-bg);
+  font-size: 18px;
+}
+
+/* For ol (ordered lists), make sure to retain numbers. Otherwise it defaults
+  to square bullet points: */
+.message-history .message ol > li {
+  list-style-type: number;
+}
+
+/* Make browser highlight color more visible against dark mode colors: */
+.message-history .message code span::selection {
+  background: #4877a5;
+}
+
+.message-history .message code {
+  padding: 0.1rem 0.5rem;
+}
+
+.markdown-code-header {
+  padding: 0.1rem 0.5rem;
+  display: flex;
+  justify-content: space-between;
+  background-color: #ffffff;
+}
+
+.clipboard {
+  margin-left: 1rem;
+  cursor: pointer;
+}
+
+.code-block {
+  max-width: 90%;
+}
+
+/* styling for empty state screen */
+.empty-state {
+  position: relative;
+  min-height: 400px;
+  text-align: center;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.empty-state .illustration {
+  margin: 20px;
+}
+
+.empty-state h1 {
+  font-size: 28px;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.empty-state h3 {
+  font-size: 20px;
+  font-weight: 400;
+  margin-bottom: 12px;
+  color: var(--sky-fg-strong);
+}
+
+.footer {
+  color: var(--slate-element-bg);
+  font-size: 16px;
+}
