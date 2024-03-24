@@ -22,7 +22,7 @@ MISTRAL_API = "TWfVrlX659GSTS9hcsgUcPZ8uNzfoQsg"
 app = Flask(__name__)
 CORS(app)
 
-BASE_PATH = "C://Users//alvin//DATA//dsc//mis_thon//mistral-hackathon-mar24//text-clustering//last_1000"
+BASE_PATH = "./last_1000"
 
 @app.route("/get_embedding_map", methods = ['GET'])
 def get_embedding_map():
@@ -77,7 +77,7 @@ def get_embedding_map():
 def process_text():
     data = request.get_json()
     text = data.get('text', '')
-    result = main(text)
+    result = handle_query(text)
     result = [obj.properties['company_name'] for obj in result.objects]
     return {'result': result}, 200
 
@@ -115,5 +115,5 @@ def handle_query(query):
 
 
 if __name__=='__main__': 
-    app.run(debug=True)
+    app.run(debug=True, host="0.0.0.0")
     

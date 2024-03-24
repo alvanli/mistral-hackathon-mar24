@@ -5,8 +5,10 @@ services:
          context: ./frontend
          dockerfile: Dockerfile
       tty: true
+      ipc: host
       ports:
          - "5049:5049"
+         - 3000:3000
       volumes:
          - ./frontend:/app
          - /app/node_modules
@@ -20,10 +22,13 @@ services:
       #flask --app app.py --debug run
       #command: gunicorn --bind 0.0.0.0:5050 app:app
       ports:
-         - "5050:5050"
+         - 5050:5050
+         - 5000:5000
       networks:
          - frontend
          - backend
+      volumes:
+         - ./backend:/app
 
 networks:
    frontend:

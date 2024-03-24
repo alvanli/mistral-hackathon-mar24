@@ -90,6 +90,8 @@ class ClusterClassifier:
         self.summary_model_token = summary_model_token
 
         self.mistral_client = MistralClient(api_key=os.environ.get("MISTRAL_API"))
+        if self.mistral_client is None:
+            print("MISTRAL DEAD")
         if summary_template is None:
             self.summary_template = DEFAULT_TEMPLATE
         else:
@@ -158,6 +160,7 @@ class ClusterClassifier:
         return inferred_labels, embeddings
 
     def embed(self, texts):
+        return []
         embeddings_response = self.mistral_client.embeddings(
             model="mistral-embed",
             input=texts
@@ -245,6 +248,7 @@ class ClusterClassifier:
         with open(f"{folder}/embeddings.npy", "wb") as f:
             np.save(f, self.embeddings)
 
+        print("Exported Embeddings")
         faiss.write_index(self.faiss_index, f"{folder}/faiss.index")
 
         with open(f"{folder}/projections.npy", "wb") as f:

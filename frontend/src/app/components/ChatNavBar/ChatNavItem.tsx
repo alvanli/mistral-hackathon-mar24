@@ -82,7 +82,6 @@ export const ChatNavItem = (props: ChatNavItemProps): JSX.Element => {
       }
       onMouseOver={() => setHovering(true)}
       onMouseOut={() => setHovering(false)}
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ref={chatRef as any}
     >
       <div className="nav-item-label">
