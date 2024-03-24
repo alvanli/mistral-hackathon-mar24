@@ -19,8 +19,6 @@ services:
          context: ./backend
          dockerfile: Dockerfile
       command: python app.py
-      #flask --app app.py --debug run
-      #command: gunicorn --bind 0.0.0.0:5050 app:app
       ports:
          - 5050:5050
          - 5000:5000

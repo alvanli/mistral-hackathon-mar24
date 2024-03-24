@@ -19,35 +19,26 @@
 
 import React, { useState } from 'react';
 import { fetchResponseFromModel } from '../../../services/apiService';
-import { type Message, Role, type IRequestBody } from '../../interfaces';
+import { Role } from '../../interfaces';
 import { MessageHistoryComponent } from './MessageHistory';
 
-interface ChatBoxProps {
-  messages: Message[];
-  setMessages: (arg: Message[]) => void;
-  modelName: string;
-  modelTemperature: number;
-  isModelLoadingReply: boolean;
-  setIsModelLoadingReply: (arg: boolean) => void;
-}
-
 const sendMessage = (
-  readyToSend: boolean,
-  setReadyToSend: (arg: boolean) => void,
-  setIsLoadingReply: (arg: boolean) => void,
-  inputVal: string,
-  setInputVal: (arg: string) => void,
-  messages: Message[],
-  setMessages: (arg: Message[]) => void,
-  setErrMsg: (arg: string) => void,
-  model: string,
-  temperature: number,
-): void => {
+  readyToSend,
+  setReadyToSend,
+  setIsLoadingReply,
+  inputVal,
+  setInputVal,
+  messages,
+  setMessages,
+  setErrMsg,
+  model,
+  temperature,
+) => {
   if (!readyToSend || !inputVal) {
     return;
   }
 
-  const message: Message = {
+  const message = {
     role: Role.user,
     content: inputVal,
   };
@@ -60,12 +51,8 @@ const sendMessage = (
   // add user's message to history
   const newMessageHistory = [...messages, message];
   setMessages(newMessageHistory);
-  const apiRequestBody: IRequestBody = {
-    messages: newMessageHistory,
-    model: model,
-    temperature: temperature,
-  };
-  fetchResponseFromModel(apiRequestBody)
+
+  fetchResponseFromModel(newMessageHistory)
     .then((resContent) => {
       setMessages([
         ...newMessageHistory,
@@ -82,7 +69,7 @@ const sendMessage = (
     });
 };
 
-export const ChatBoxComponent: React.FC<ChatBoxProps> = ({
+export const ChatBoxComponent = ({
   messages,
   setMessages,
   modelName,
@@ -90,8 +77,8 @@ export const ChatBoxComponent: React.FC<ChatBoxProps> = ({
   isModelLoadingReply,
   setIsModelLoadingReply,
 }) => {
-  const [readyToSendMessage, setReadyToSendMessage] = useState<boolean>(true);
-  const [errMsg, setErrMsg] = useState<string>('');
+  const [readyToSendMessage, setReadyToSendMessage] = useState(true);
+  const [errMsg, setErrMsg] = useState('');
   const [inputVal, setInputVal] = useState('');
 
   const triggerSendMessage = () =>

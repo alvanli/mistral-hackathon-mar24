@@ -5,7 +5,7 @@ import * as d3 from "d3";
 import axios from 'axios';
 
 
-export function Graph() {
+export function Graph({setCurrComp, handleOpen}) {
   const [embs, setEmbs] = useState([]);
   const [clusters, setClusters] = useState({});
   useEffect(() => {
@@ -14,7 +14,7 @@ export function Graph() {
       setClusters(response.data.clusters)
     }).catch(err => console.log(err));
   }, [])
-  return <EmbedGraph embs={embs} clusters={clusters} />
+  return <EmbedGraph embs={embs} clusters={clusters} setCurrComp={setCurrComp} handleOpen={handleOpen} />
 }
 
 const getX = (course) => {
@@ -29,7 +29,7 @@ const MARGIN = { top: 50, right: 50, bottom: 60, left: 100 };
 const BUBBLE_MIN_SIZE = 1;
 const BUBBLE_MAX_SIZE = 7;
 
-function EmbedGraph({ embs, clusters }) {
+function EmbedGraph({ embs, clusters, setCurrComp, handleOpen }) {
   const [hovered, setHovered] = useState(null);
 
   const COLOR_LIST = [
@@ -111,7 +111,10 @@ function EmbedGraph({ embs, clusters }) {
             label: d.label
           })
         }
-        // onClick={() => void}
+        onClick={() => {
+          setCurrComp(d);
+          handleOpen();
+        }}
         onMouseLeave={() => {
           setHovered(null);
         }}

@@ -17,21 +17,25 @@
 // limitations under the License.
 // *****************************************************************************
 
-import axios, { type AxiosError, type AxiosResponse } from 'axios';
-import { type IRequestBody } from '../app/interfaces';
+import axios from 'axios';
 import { modelChoices } from '../constants';
 
+import {
+  Role
+} from "./../app/interfaces";
+
+
 export async function fetchResponseFromModel(
-  props: IRequestBody,
-): Promise<string> {
-  const requestBody = modelChoices[props.model].requestBody(props);
-  const url = modelChoices[props.model].apiEndpoint;
+  messageHistory,
+) {
+  const requestBody = {"text": messageHistory.filter(a => a.role === Role.user).map(a => a.content).join("\n")};
+  const url = "http://localhost:5000/chat";
   try {
-    const res: AxiosResponse = await axios.post(url, requestBody);
-    return modelChoices[props.model].responseHandler(res.data);
+    const res = await axios.post(url, requestBody);
+    return res.data.response;
   } catch (error) {
-    const err = error as AxiosError;
-    const errRes = err.response as AxiosResponse;
+    const err = error;
+    const errRes = err.response;
 
     if (err.message && errRes.data.detail) {
       throw new Error(`${err.message}: ${errRes.data.detail}`);

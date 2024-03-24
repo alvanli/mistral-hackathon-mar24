@@ -34,10 +34,15 @@ import {
   type Conversation,
   type ConversationsState,
   type Message,
+  type Role
 } from "./interfaces";
 import { ChatNavBarComponent } from "./components/ChatNavBar";
 import { EmptyChatBoxComponent } from "./components/EmptyChatBox";
 import { ModelBannerComponent } from "./components/ModelBanner";
+
+import Modal from '@mui/material/Modal';
+import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
 
 // Key actions for the gateway app. We should put it in the highest level component.
 const saveConversationsStateToLocalStorage = (
@@ -162,6 +167,11 @@ export function App(): JSX.Element {
 
   const [showSettings, setShowSettings] = useState(false);
 
+  const [modalOpen, setOpen] = useState<boolean>(false);
+  const [currComp, setCurrComp] = useState({title: "", text: ""})
+  const handleOpen = () => setOpen(true);
+  const handleClose = () => setOpen(false);
+  
   return (
     <>
       {/* Note: To set cursor animation and disable cursor at the same time,
@@ -182,7 +192,42 @@ export function App(): JSX.Element {
             deleteConversation={deleteConversation}
             updateChatTitle={updateChatTitle}
           />
-
+          <Modal
+            open={modalOpen}
+            onClose={handleClose}
+            aria-labelledby="modal-modal-title"
+            aria-describedby="modal-modal-description"
+          >
+            <Box sx={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: 500,
+              bgcolor: 'background.paper',
+              border: '2px solid #000',
+              boxShadow: 24,
+              p: 4,
+            }}>
+              <Typography 
+                id="modal-modal-title1"
+                style={{
+                  color: "black",
+                  fontSize: 20
+                }}
+              >
+                {Object.keys(currComp).length && `${currComp.title}`}
+              </Typography>
+              <Typography id="modal-modal-title2"
+                style={{
+                  color: "black",
+                  fontSize: 12
+                }}
+              >
+                {Object.keys(currComp).length && `${currComp.text}`}
+              </Typography>
+            </Box>
+          </Modal>
           <div className="main-chat-container">
             {currentSelectedId !== null ? (
               <>
@@ -208,7 +253,7 @@ export function App(): JSX.Element {
                 )}
                 {
                   currentTab === 1 && (
-                    <Graph />
+                    <Graph handleOpen={handleOpen} setCurrComp={setCurrComp}/>
                   )
                 }
               </>

@@ -9,6 +9,7 @@ import weaviate
 import weaviate.classes as wvc
 import os
 import requests
+import joblib
 import json
 import pandas as pd
 
@@ -77,11 +78,45 @@ def get_embedding_map():
     })
 
 
+@app.route('/addNewIdea', methods=['POST'])
+def addNewIdea():
+    data = request.get_json()
+    query = data.get('text', '')   
+    mistral_client = MistralClient(api_key=MISTRAL_API)
+    model = "mistral-large-latest"
+    from mistralai.models.chat_completion import ChatMessage
+    prompt = """
+    Given the following chat history, summarize the new company that the user is pitching: \n
+    """
+    messages = [
+        ChatMessage(role="user", content=prompt + query)
+    ]
+
+    chat_response = mistral_client.chat(
+        model=model,
+        messages=messages,
+    )
+    newCompSummary = chat_response.choices[0].message.content
+
+    emb_query = mistral_client.embeddings(
+        model="mistral-embed",
+        input=[newCompSummary]
+    ).data[0].embedding
+
+    umap_model = joblib.load(f"./{BASE_PATH}/umap_model.pkl")
+    two_dim_emb = umap_model.transform([emb_query])
+
+    return jsonify({
+        "summary": newCompSummary,
+        "center": two_dim_emb.tolist()
+    })
+
+
+
 @app.route('/chat', methods=['POST'])
 def chat():
     data = request.get_json()
     query = data.get('text', '')
-
     # query vector db to get relevant company info
     rag_result = handle_query(query)
 
