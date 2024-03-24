@@ -26,6 +26,7 @@ def add_news_stories(client, mistral_client):
     )
 
     news_stories = read_jsonl('./data/all_news_stories.jsonl')
+    news_stories = news_stories[:1000]
 
     ### EMBED
     descriptions = [story["description"] for story in news_stories]
@@ -56,7 +57,8 @@ def add_news_stories(client, mistral_client):
         if idx % 100 == 0:
             news.data.insert_many(news_objs)
             news_objs = []
-    news.data.insert_many(news_objs)
+    if news_objs:
+        news.data.insert_many(news_objs)
 
 
 def add_ycombinator_companies(client, mistral_client):
@@ -68,11 +70,14 @@ def add_ycombinator_companies(client, mistral_client):
     df = pd.read_csv('data/2023-07-13-yc-companies.csv')
     df2 = pd.read_csv('data/2023-02-27-yc-companies.csv')
     df = pd.concat([df, df2])
+    df = df.dropna()
+    df = df.loc[:1000]
 
     ### EMBED
-    long_descriptions = list(df['long_description'].dropna().values)
+    long_descriptions = list(df['long_description'].values)
+    batched_descriptions = [long_descriptions[i:i+5] for i in range(0, len(long_descriptions), 5)]
     all_vecs = []
-    for batch in zip(*(iter(long_descriptions),) * 5):
+    for batch in batched_descriptions:
         embeddings_response = mistral_client.embeddings(
             model="mistral-embed",
             input=list(batch)
@@ -80,30 +85,31 @@ def add_ycombinator_companies(client, mistral_client):
         vecs = [vec.embedding for vec in embeddings_response.data]
         all_vecs += vecs
         time.sleep(0.97)
-    df['vector'] = all_vecs
 
     companies_objs = list()
-    for idx, row in df.iterrows():
+    for vec, data in zip(all_vecs, df.iterrows()):
+        idx, row = data
         companies_objs.append(wvc.data.DataObject(
                 properties={
                     "company": row["company_name"],
                     "description": row["long_description"],
                     "location": row["location"],
                 },
-                vector=row["vector"]
+                vector=vec
             ))
         if idx % 100 == 0:
             companies.data.insert_many(companies_objs)
             companies_objs = []
-    companies.data.insert_many(companies_objs)
+    if companies_objs:
+        companies.data.insert_many(companies_objs)
 
 
 def main():
-    # client = weaviate.connect_to_local()
     WCS_CLUSTER_URL = "https://anthony-sandbox-7f0z4seo.weaviate.network"
     client = weaviate.connect_to_wcs(
         cluster_url=WCS_CLUSTER_URL,
-        auth_credentials=None
+        auth_credentials=None,
+        skip_init_checks=True
     )
     mistral_client = MistralClient(api_key=MISTRAL_API)
 
