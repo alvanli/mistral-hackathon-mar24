@@ -24,7 +24,7 @@ export const Tooltip = ({ interactionData, clusters }) => {
           textAlign: "left"
         }}
       >
-        {clusters[interactionData.label].summary !== "None" && +`${clusters[interactionData.label].summary}: `}
+        {clusters[interactionData.label].summary !== "None" && `${clusters[interactionData.label].summary}: `}
       </div>
       {interactionData.name}
     </div>
