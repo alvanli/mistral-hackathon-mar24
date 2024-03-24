@@ -19,7 +19,8 @@ from groq import Groq
 
 
 MISTRAL_API = "TWfVrlX659GSTS9hcsgUcPZ8uNzfoQsg"
-GROQ_API = "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"
+#GROQ_API = "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"
+#GROQ_API2 = "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"
 
 
 app = Flask(__name__)
@@ -98,21 +99,39 @@ def chat():
         tractor=context,
         question=query
     )
+
+    # Send prompt to Mistralai
+    mistral_client = MistralClient(api_key=MISTRAL_API)
+    model = "mistral-large-latest"
+    from mistralai.models.chat_completion import ChatMessage
+    messages = [
+        ChatMessage(role="user", content=prompt)
+    ]
+
+    chat_response = mistral_client.chat(
+        model=model,
+        messages=messages,
+    )
+    return {
+        "prompt": prompt,
+        "response": chat_response.choices[0].message.content
+    }
+
     
     # Send prompt to groq
-    client = Groq(
-        api_key=GROQ_API
-    )
-    chat_completion = client.chat.completions.create(
-        messages=[
-            {
-                "role": "user",
-                "content": prompt,
-            }
-        ],
-        model="mixtral-8x7b-32768",
-    )
-    return chat_completion.choices[0].message.content
+    # client = Groq(
+    #     api_key=GROQ_API
+    # )
+    # chat_completion = client.chat.completions.create(
+    #     messages=[
+    #         {
+    #             "role": "user",
+    #             "content": prompt,
+    #         }
+    #     ],
+    #     model="mixtral-8x7b-32768",
+    # )
+    # return chat_completion.choices[0].message.content
 
     # Send prompt to localhost 5555
     # url = "http://localhost:5555/chat"
@@ -160,10 +179,11 @@ def query_collection2(vectordb_client, query, collection_name, mistral_client):
 
 
 @app.route('/query_vector_db', methods=['POST'])
-def handle_query():
-    data = request.get_json()
-    query = data.get('text', '')
+def query_vector_db():
+    pass
 
+
+def handle_query(query):
     WCS_CLUSTER_URL = "https://anthony-sandbox-7f0z4seo.weaviate.network"
     client = weaviate.Client(
         url=WCS_CLUSTER_URL,
