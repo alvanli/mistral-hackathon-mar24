@@ -1,18 +1,32 @@
-version: "3.8"
+version: '3.8'
 services:
-  mis-thon:
-    ipc: host
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: "alv/mis-thon:debug"
-    deploy:
-      resources:
-        reservations:
-          devices:
-          - driver: nvidia
-            device_ids: ['0'] # Change to ['0', '1'] to use two GPUs
-            capabilities: [gpu]
-    tty: true 
-    volumes:
-      - /home/dsc-admin/Documents/mis-thon/:/exp
+   client:
+      build:
+         context: ./frontend
+         dockerfile: Dockerfile
+      tty: true
+      ports:
+         - "5049:5049"
+      volumes:
+         - ./frontend:/app
+         - /app/node_modules
+      networks:
+         - backend   
+   api:
+      build: 
+         context: ./backend
+         dockerfile: Dockerfile
+      command: python app.py
+      #flask --app app.py --debug run
+      #command: gunicorn --bind 0.0.0.0:5050 app:app
+      ports:
+         - "5050:5050"
+      networks:
+         - frontend
+         - backend
+
+networks:
+   frontend:
+      driver: bridge
+   backend:
+      driver: bridge
