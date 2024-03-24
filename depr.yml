@@ -2,6 +2,9 @@
 version: '3.4'
 services:
   weaviate:
+    build:
+        context: .
+        dockerfile: WeaviateDockerfile
     command:
     - --host
     - 0.0.0.0
@@ -9,16 +12,12 @@ services:
     - '8080'
     - --scheme
     - http
-    - /bin/sh
-    - -c
-    - |
-      pip install -r requirements.txt && python spinup.py
     image: cr.weaviate.io/semitechnologies/weaviate:1.24.5
     ports:
     - 8080:8080
     - 50051:50051
     volumes:
-    - data:/var/lib/weaviate
+    - weaviate_data:/var/lib/weaviate
     restart: on-failure:0
     environment:
       QUERY_DEFAULTS_LIMIT: 25
@@ -27,23 +26,13 @@ services:
       DEFAULT_VECTORIZER_MODULE: 'none'
       ENABLE_MODULES: 'text2vec-cohere,text2vec-huggingface,text2vec-palm,text2vec-openai,generative-openai,generative-cohere,generative-palm,ref2vec-centroid,reranker-cohere,qna-openai'
       CLUSTER_HOSTNAME: 'node1'
-    
   flask_app:
     build:
-      context: .
-      dockerfile: FlaskDockerfile
+        context: .
+        dockerfile: FlaskDockerfile
     ports:
     - 5000:5000
     restart: on-failure:0
-    depends_on:
-      - weaviate
-  # data_eng:
-  #   build:
-  #       context: .
-  #       dockerfile: WeaviateDockerfile
-  #   depends_on:
-  #     - weaviate
-  #   restart: on-failure:0
 volumes:
-  data:
+  weaviate_data:
 ...
