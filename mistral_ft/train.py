@@ -1,40 +1,52 @@
 import time
+import json
+import pandas as pd
 import torch
-
+import random
 from transformers import (
     BitsAndBytesConfig, AutoModelForCausalLM, AutoTokenizer, TrainingArguments
 )
+from datasets import Dataset
 from peft import prepare_model_for_kbit_training, LoraConfig, get_peft_model
 from trl import SFTTrainer
 
+tokenizer = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-v0.1")
 
-def create_prompt(sample):
-    bos_token = "<s>"
-    original_system_message = "Below is an instruction that describes a task. Write a response that appropriately completes the request."
-    system_message = "Use the provided input to create an instruction that could have been used to generate the response with an LLM."
-    response = sample["prompt"].replace(original_system_message, "").replace("\n\n### Instruction\n", "").replace("\n### Response\n", "").strip()
-    input = sample["response"]
-    eos_token = "</s>"
+tokenizer.pad_token = tokenizer.eos_token
+tokenizer.padding_side = "right"
 
-    full_prompt = ""
-    full_prompt += bos_token
-    full_prompt += "### Instruction:"
-    full_prompt += "\n" + system_message
-    full_prompt += "\n\n### Input:"
-    full_prompt += "\n" + input
-    full_prompt += "\n\n### Response:"
-    full_prompt += "\n" + response
-    full_prompt += eos_token
+def add_text(row):
+    golden = row['golden']
+    distractors = [row['distractor1'],row['distractor2'],row['distractor3']]
 
-    return full_prompt
+    if golden:
+        distractors.append(golden)
+    
+    random.shuffle(distractors)
+
+    prompt = """
+        <s>[INST] Context information is below.
+        ---------------------
+        {tractor}
+        ---------------------
+        Given the context information and not prior knowledge, answer the query.
+        Query: {question} [/INST]
+        {answer} </s>
+    """.format(
+        tractor="\n".join(distractors),
+        question=row['question'],
+        answer=row['answer']
+    )
+    row['text'] = prompt
+    return row
 
 
 if __name__ == "__main__":
     nf4_config = BitsAndBytesConfig(
-    load_in_4bit=True,
-    bnb_4bit_quant_type="nf4",
-    bnb_4bit_use_double_quant=True,
-    bnb_4bit_compute_dtype=torch.bfloat16
+        load_in_4bit=True,
+        bnb_4bit_quant_type="nf4",
+        bnb_4bit_use_double_quant=True,
+        bnb_4bit_compute_dtype=torch.bfloat16
     )
 
     model = AutoModelForCausalLM.from_pretrained(
@@ -44,10 +56,11 @@ if __name__ == "__main__":
         use_cache=False
     )
 
-    tokenizer = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-v0.1")
 
-    tokenizer.pad_token = tokenizer.eos_token
-    tokenizer.padding_side = "right"
+    df = pd.read_csv("./data_new.csv")
+    ds = Dataset.from_pandas(df)
+    ds = ds.map(add_text)
+    ds = ds.train_test_split(test_size=0.1, seed=42)
 
     peft_config = LoraConfig(
         use_dora=True,
@@ -63,8 +76,7 @@ if __name__ == "__main__":
 
     args = TrainingArguments(
         output_dir = "mistral_instruct_generation",
-        #num_train_epochs=5,
-        max_steps = 100, 
+        num_train_epochs=3,
         per_device_train_batch_size = 4,
         warmup_steps = 0.03,
         logging_steps=10,
@@ -84,11 +96,11 @@ if __name__ == "__main__":
         peft_config=peft_config,
         max_seq_length=max_seq_length,
         tokenizer=tokenizer,
+        dataset_text_field="text",
         packing=True,
-        formatting_func=create_prompt,
         args=args,
-        train_dataset=instruct_tune_dataset["train"],
-        eval_dataset=instruct_tune_dataset["test"]
+        train_dataset=ds['train'],
+        eval_dataset=ds["test"]
     )
 
     start = time.time()
