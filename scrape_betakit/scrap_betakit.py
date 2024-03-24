@@ -63,7 +63,7 @@ def get_groq_summarize_startup(company, newsstory):
 
 
 if __name__ == "__main__":
-    for page_idx in range(10,100):
+    for page_idx in range(20,100):
         print("="*10)
         print(f"Doing page {page_idx}")
         print("="*10)

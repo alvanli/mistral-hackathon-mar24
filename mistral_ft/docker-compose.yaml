@@ -1,0 +1,20 @@
+version: "3.8"
+services:
+  mistral-serve:
+    ipc: host
+    ports:
+      - 5555:5555
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: "alv/mistral-serve:debug"
+    deploy:
+      resources:
+        reservations:
+          devices:
+          - driver: nvidia
+            device_ids: ['0'] # Change to ['0', '1'] to use two GPUs
+            capabilities: [gpu]
+    tty: true 
+    volumes:
+      - /home/dsc-admin/Documents/mis-thon/mistral_ft:/exp
