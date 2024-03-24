@@ -78,8 +78,57 @@ def process_text():
     data = request.get_json()
     text = data.get('text', '')
     result = handle_query(text)
-    result = [obj.properties['company_name'] for obj in result.objects]
-    return {'result': result}
+    return result
+
+
+def create_prompt(sample):
+    bos_token = "<s>"
+    original_system_message = "Below is an instruction that describes a task. Write a response that appropriately completes the request."
+    system_message = "Use the provided input to create an instruction that could have been used to generate the response with an LLM."
+    response = sample["prompt"].replace(original_system_message, "").replace("\n\n### Instruction\n", "").replace("\n### Response\n", "").strip()
+    input = sample["response"]
+    eos_token = "</s>"
+
+    full_prompt = ""
+    full_prompt += bos_token
+    full_prompt += "### Instruction:"
+    full_prompt += "\n" + system_message
+    full_prompt += "\n\n### Input:"
+    full_prompt += "\n" + input
+    full_prompt += "\n\n### Response:"
+    full_prompt += "\n" + response
+    full_prompt += eos_token
+
+    return full_prompt
+
+
+@app.route('/chat', methods=['POST'])
+def chat():
+    data = request.get_json()
+    query = data.get('text', '')
+
+    # query vector db to get relevant company info
+    rag_result = handle_query(query)
+
+    context = "".join([f"""{company['company']} is a company located in {company['location']}. They are described as {company['description']}.\n""" for company in companies])
+
+    # Stuff context into query
+    prompt =  """
+        <s>[INST] Context information is below.
+        ---------------------
+        {tractor}
+        ---------------------
+        Given the context information and not prior knowledge, answer the query.
+        Query: {question} [/INST]
+    """.format(
+        tractor=context,
+        question=query
+    )
+    
+    # Send prompt to localhost 5555
+    url = "http://localhost:5555/chat"
+    response = requests.post(url, json={"text": prompt})
+    return response.json()
 
 
 def query_collection(query, collection, mistral_client):
@@ -99,17 +148,41 @@ def query_collection(query, collection, mistral_client):
     return result
 
 
+def query_collection2(vectordb_client, query, collection_name, mistral_client):
+    ### Embed query
+    emb_query = mistral_client.embeddings(
+        model="mistral-embed",
+        input=[query]
+    ).data[0].embedding
+
+    response = (
+        vectordb_client.query
+        .get(collection_name, ["company", "description", "location"])
+        .with_near_vector(
+            {
+                "vector": emb_query,
+            }
+        )
+        .with_limit(2)
+        .do()
+    )
+    #response = response["data"]["Get"][collection_name]
+    return response["data"]["Get"][collection_name]
+
+
 def handle_query(query):
     WCS_CLUSTER_URL = "https://anthony-sandbox-7f0z4seo.weaviate.network"
-    client = weaviate.connect_to_wcs(
-        cluster_url=WCS_CLUSTER_URL,
-        auth_credentials=None
+    client = weaviate.Client(
+        url=WCS_CLUSTER_URL,
+        auth_client_secret=None
     )
 
     mistral_client = MistralClient(api_key=MISTRAL_API)
-    companies = client.collections.get("YCCompanies")
-    news = client.collections.get("News") # what 2 do here?
-    result = query_collection(query, companies, mistral_client)
+    
+    result = query_collection2(client, query, "YCCompanies", mistral_client)
+    #companies = client.collections.get("YCCompanies")
+    #news = client.collections.get("News") # what 2 do here?
+    #result = query_collection(query, companies, mistral_client)
 
     return result
 
