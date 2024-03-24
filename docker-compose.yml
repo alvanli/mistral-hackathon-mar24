@@ -1,6 +1,6 @@
 version: "3.8"
 services:
-  alv_shit:
+  mis-thon:
     ipc: host
     build:
       context: .
