@@ -137,7 +137,22 @@ def chat():
         question=query
     )
 
-    # Send prompt to Mistralai
+    # with open("./temp.txt", "w") as f:
+    #     f.write(prompt)
+
+    # time.sleep(7)
+
+    # if os.path.exists("./temp_res.txt"):
+    #     with open("./temp_res.txt", "r") as f:
+    #         res = f.read()
+    # else:
+    #     res = None
+
+    # return {
+    #     "prompt": prompt,
+    #     "response": res
+    # }
+
     mistral_client = MistralClient(api_key=MISTRAL_API)
     model = "mistral-large-latest"
     
