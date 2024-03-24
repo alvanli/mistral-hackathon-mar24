@@ -8,7 +8,8 @@ RUN python3 -m pip install datasets evaluate tensorboard bitsandbytes accelerate
 # RUN python3 -m pip install torchaudio --extra-index-url https://download.pytorch.org/whl/cu121
 RUN python3 -m pip install git+https://github.com/huggingface/peft
 RUN python3 -m pip install notebook opencc-python-reimplemented
-RUN python3 -m pip install flash-attn --no-build-isolation
+RUN python3 -m pip install flash-attn --no-build-isolation 
+RUN python3 -m pip install Flask flask-cors
 # RUN python3 -m bitsandbytes
 
 RUN git config --global credential.helper software
