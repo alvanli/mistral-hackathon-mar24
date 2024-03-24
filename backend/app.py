@@ -13,6 +13,7 @@ import json
 import pandas as pd
 
 from mistralai.client import MistralClient
+from mistralai.models.chat_completion import ChatMessage
 import time
 
 from groq import Groq
@@ -83,10 +84,11 @@ def chat():
     query = data.get('text', '')
 
     # query vector db to get relevant company info
-    rag_result = handle_query(query)
+    companies_rag_result, news_rag_result = handle_query(query)
 
-    context = "".join([f"""{company['company']} is a company located in {company['location']}. They are described as {company['description']}.\n""" for company in rag_result])
-
+    context = "".join([f"""{company['company']} is a company located in {company['location']}. They are described as {company['description']}.\n""" for company in companies_rag_result])
+    context += "\n\nBelow are news articles that may or may not be relevant to the query. \n\n"
+    context += "".join([f"""{news['newsstory']} is a news article about {news['company']}.\n""" for news in news_rag_result])
     # Stuff context into query
     prompt =  """
         <s>[INST] Context information is below.
@@ -103,7 +105,7 @@ def chat():
     # Send prompt to Mistralai
     mistral_client = MistralClient(api_key=MISTRAL_API)
     model = "mistral-large-latest"
-    from mistralai.models.chat_completion import ChatMessage
+    
     messages = [
         ChatMessage(role="user", content=prompt)
     ]
@@ -117,55 +119,35 @@ def chat():
         "response": chat_response.choices[0].message.content
     }
 
-    
-    # Send prompt to groq
-    # client = Groq(
-    #     api_key=GROQ_API
-    # )
-    # chat_completion = client.chat.completions.create(
-    #     messages=[
-    #         {
-    #             "role": "user",
-    #             "content": prompt,
-    #         }
-    #     ],
-    #     model="mixtral-8x7b-32768",
-    # )
-    # return chat_completion.choices[0].message.content
-
     # Send prompt to localhost 5555
     # url = "http://localhost:5555/chat"
     # response = requests.post(url, json={"text": prompt})
     # return response.json()
 
 
-def query_collection(query, collection, mistral_client):
+def query_collection(vectordb_client, query, collection_name, mistral_client):
     ### Embed query
     emb_query = mistral_client.embeddings(
         model="mistral-embed",
         input=[query]
     ).data[0].embedding
 
-    result = (
-        collection.query.near_vector(
-        near_vector=emb_query, 
-            limit=2
-        )
-    )
-
-    return result
-
-
-def query_collection2(vectordb_client, query, collection_name, mistral_client):
-    ### Embed query
-    emb_query = mistral_client.embeddings(
-        model="mistral-embed",
-        input=[query]
-    ).data[0].embedding
+    field_map = {
+        "YCCompanies": [
+            "company",
+            "description",
+            "location"
+        ],
+        "News": [
+            "company",
+            "description",
+            "newsstory"
+        ]
+    }
 
     response = (
         vectordb_client.query
-        .get(collection_name, ["company", "description", "location"])
+        .get(collection_name, field_map[collection_name])
         .with_near_vector(
             {
                 "vector": emb_query,
@@ -179,8 +161,12 @@ def query_collection2(vectordb_client, query, collection_name, mistral_client):
 
 
 @app.route('/query_vector_db', methods=['POST'])
-def query_vector_db():
-    pass
+def process_text():
+    data = request.get_json()
+    text = data.get('text', '')
+    result = handle_query(text)
+    result = [obj.properties['company_name'] for obj in result.objects]
+    return {'result': result}, 200
 
 
 def handle_query(query):
@@ -192,12 +178,10 @@ def handle_query(query):
 
     mistral_client = MistralClient(api_key=MISTRAL_API)
     
-    result = query_collection2(client, query, "YCCompanies", mistral_client)
-    #companies = client.collections.get("YCCompanies")
-    #news = client.collections.get("News") # what 2 do here?
-    #result = query_collection(query, companies, mistral_client)
+    companies_result = query_collection(client, query, "YCCompanies", mistral_client)
+    news_result = query_collection(client, query, "News", mistral_client)
 
-    return result
+    return companies_result, news_result
 
 
 if __name__=='__main__': 
