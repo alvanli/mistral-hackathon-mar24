@@ -15,8 +15,11 @@ import pandas as pd
 from mistralai.client import MistralClient
 import time
 
+from groq import Groq
+
 
 MISTRAL_API = "TWfVrlX659GSTS9hcsgUcPZ8uNzfoQsg"
+GROQ_API = "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"
 
 
 app = Flask(__name__)
@@ -73,35 +76,6 @@ def get_embedding_map():
     })
 
 
-@app.route('/query_vector_db', methods=['POST'])
-def process_text():
-    data = request.get_json()
-    text = data.get('text', '')
-    result = handle_query(text)
-    return result
-
-
-def create_prompt(sample):
-    bos_token = "<s>"
-    original_system_message = "Below is an instruction that describes a task. Write a response that appropriately completes the request."
-    system_message = "Use the provided input to create an instruction that could have been used to generate the response with an LLM."
-    response = sample["prompt"].replace(original_system_message, "").replace("\n\n### Instruction\n", "").replace("\n### Response\n", "").strip()
-    input = sample["response"]
-    eos_token = "</s>"
-
-    full_prompt = ""
-    full_prompt += bos_token
-    full_prompt += "### Instruction:"
-    full_prompt += "\n" + system_message
-    full_prompt += "\n\n### Input:"
-    full_prompt += "\n" + input
-    full_prompt += "\n\n### Response:"
-    full_prompt += "\n" + response
-    full_prompt += eos_token
-
-    return full_prompt
-
-
 @app.route('/chat', methods=['POST'])
 def chat():
     data = request.get_json()
@@ -110,7 +84,7 @@ def chat():
     # query vector db to get relevant company info
     rag_result = handle_query(query)
 
-    context = "".join([f"""{company['company']} is a company located in {company['location']}. They are described as {company['description']}.\n""" for company in companies])
+    context = "".join([f"""{company['company']} is a company located in {company['location']}. They are described as {company['description']}.\n""" for company in rag_result])
 
     # Stuff context into query
     prompt =  """
@@ -125,10 +99,25 @@ def chat():
         question=query
     )
     
+    # Send prompt to groq
+    client = Groq(
+        api_key=GROQ_API
+    )
+    chat_completion = client.chat.completions.create(
+        messages=[
+            {
+                "role": "user",
+                "content": prompt,
+            }
+        ],
+        model="mixtral-8x7b-32768",
+    )
+    return chat_completion.choices[0].message.content
+
     # Send prompt to localhost 5555
-    url = "http://localhost:5555/chat"
-    response = requests.post(url, json={"text": prompt})
-    return response.json()
+    # url = "http://localhost:5555/chat"
+    # response = requests.post(url, json={"text": prompt})
+    # return response.json()
 
 
 def query_collection(query, collection, mistral_client):
@@ -170,7 +159,11 @@ def query_collection2(vectordb_client, query, collection_name, mistral_client):
     return response["data"]["Get"][collection_name]
 
 
-def handle_query(query):
+@app.route('/query_vector_db', methods=['POST'])
+def handle_query():
+    data = request.get_json()
+    query = data.get('text', '')
+
     WCS_CLUSTER_URL = "https://anthony-sandbox-7f0z4seo.weaviate.network"
     client = weaviate.Client(
         url=WCS_CLUSTER_URL,
