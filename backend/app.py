@@ -79,7 +79,7 @@ def process_text():
     text = data.get('text', '')
     result = handle_query(text)
     result = [obj.properties['company_name'] for obj in result.objects]
-    return {'result': result}, 200
+    return {'result': result}
 
 
 def query_collection(query, collection, mistral_client):

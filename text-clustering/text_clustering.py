@@ -58,8 +58,8 @@ class ClusterClassifier:
         embed_agg_strategy=None,
         umap_components=2,
         umap_metric="cosine",
-        dbscan_eps=0.2,
-        dbscan_min_samples=5,
+        dbscan_eps=0.5,
+        dbscan_min_samples=70,
         dbscan_n_jobs=16,
         summary_create=True,
         summary_model="mistralai/Mixtral-8x7B-Instruct-v0.1",
@@ -89,7 +89,7 @@ class ClusterClassifier:
         self.summary_chunk_size = summary_chunk_size
         self.summary_model_token = summary_model_token
 
-        self.mistral_client = MistralClient(api_key=os.environ.get("MISTRAL_API"))
+        self.mistral_client = None # MistralClient(api_key=os.environ.get("MISTRAL_API"))
         if self.mistral_client is None:
             print("MISTRAL DEAD")
         if summary_template is None:
