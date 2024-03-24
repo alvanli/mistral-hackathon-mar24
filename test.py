@@ -41,5 +41,6 @@ def query_collection(query, collection, mistral_client):
 query = "I want to build a company that will revolutionize the way we think about food"
 companies = client.collections.get("YCCompanies")
 result = query_collection(query, companies, mistral_client)
-print(result)
+
+print([obj.properties['company_name'] for obj in result.objects])
 

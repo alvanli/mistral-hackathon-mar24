@@ -13,6 +13,7 @@ import time
 
 from flask import Flask, request
 
+
 MISTRAL_API = "TWfVrlX659GSTS9hcsgUcPZ8uNzfoQsg"
 
 app = Flask(__name__)
@@ -23,6 +24,7 @@ def process_text():
     data = request.get_json()
     text = data.get('text', '')
     result = main(text)
+    result = [obj.properties['company_name'] for obj in result.objects]
     return {'result': result}, 200
 
 
