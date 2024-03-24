@@ -111,6 +111,8 @@ def main():
     # TODO: check if it is populated, if so don't reinitialize, do something less dumb Anthony
     if client.collections.exists("YCCompanies"):
         client.collections.delete("YCCompanies")
+    if client.collections.exists("News"):
+        client.collections.delete("News")
 
     ## Init vector db
     add_ycombinator_companies(client, mistral_client)
