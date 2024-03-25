@@ -20,9 +20,9 @@ import time
 from groq import Groq
 
 
-MISTRAL_API = "TWfVrlX659GSTS9hcsgUcPZ8uNzfoQsg"
-#GROQ_API = "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"
-#GROQ_API2 = "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"
+MISTRAL_API = None
+#GROQ_API = None
+#GROQ_API2 = None
 
 
 app = Flask(__name__)
